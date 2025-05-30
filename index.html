@@ -1,0 +1,42 @@
+<html style="max-width: 100%; overflow-x: hidden; font-size: 2em;" align="center">
+<script src="page.js"></script>
+<script src="webrtc.js"></script>
+
+<head>
+    <title>PianoUI</title>
+</head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<body style="max-width: 100%; overflow-x: hidden; ">
+
+    <label id="progress"></label><br>
+
+    <select id="media" style="width: 8em; font-size: 0.7em;">
+        <option value="None">None</option>
+        <option value="Audio">Audio</option>
+        <option value="Video">Video</option>
+        <option value="Video HQ">Video HQ</option>
+    </select><br>
+
+    <input type="text" id="hostId" style="width: 14em; font-size: 0.7em;">
+    <label id="hostIdDisplay"></label><br>
+    <div>
+        <button id="guestButton" onclick="guest()" style="font-size: 0.6em;">
+            Dial a host
+        </button>
+        <button id="hostButton" onclick="host()" style="font-size: 0.6em;">
+            or become one
+        </button>
+    </div>
+
+    <label>Remote Video</label><br>
+    <!-- <div id="remoteVideos"></div> -->
+    <video id="remoteVideo" style="width: 10em; height: 8em" autoplay controls playsinline></video>
+    <br>
+
+    <label>Local Video</label><br>
+    <video id="localVideo" style="width: 10em; height: 8em" autoplay controls muted playsinline></video>
+    <br>
+</body>
+
+</html>
