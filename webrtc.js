@@ -158,6 +158,7 @@ async function waitForIceDisonnected(sessionData) {
 }
 
 async function host() {
+    let phase = "";
     try {
         pageStartCall();
 
@@ -165,12 +166,19 @@ async function host() {
             localSessionDescription: '',
             iceConnectionState: ''
         };
+        pageSetProgress('creating the peer connection');
+        phase = "initializePeerConnection";
         const peerConnection = await initializePeerConnection();
 
+        pageSetProgress('creating the guest answer');
+        phase = "prepareHostOffer";
         await prepareHostOffer(peerConnection, sessionData);
-
+        
+        pageSetProgress('wait for all ice candidates');
+        phase = "waitForLocalDescription";
         await waitForLocalDescription(peerConnection, sessionData);
 
+        phase = "signalling";
         let hostSignal = await fetch(`${window.location.origin}/api/host?id=${pageHostId()}`, {
             method: 'GET'
         });
@@ -188,7 +196,7 @@ async function host() {
         });
 
         if (!hostSignal.ok) {
-            throw Error('cannot establish the id');
+            throw Error('cannot establish the host id');
         }
 
         const hostSignalJson = await hostSignal.json();
@@ -200,13 +208,15 @@ async function host() {
 
         pageSetProgress('connecting...');
 
+        phase = "waitForIceConnected";
         await waitForIceConnected(peerConnection, sessionData);
         pageSetProgress('connected!');
 
+        phase = "waitForIceDisonnected";
         await waitForIceDisonnected(sessionData);
         pageNotify('disconnected');
     } catch (error) {
-        pageNotify(error);
+        pageNotify(`${phase}: ${error}`);
     }
 
     peerConnection = null;
@@ -215,6 +225,7 @@ async function host() {
 }
 
 async function guest() {
+    let phase = "";
     try {
         pageStartCall();
 
@@ -222,15 +233,22 @@ async function guest() {
             localSessionDescription: '',
             iceConnectionState: ''
         };
+        pageSetProgress('creating the peer connection');
+        phase = "initializePeerConnection";
         const peerConnection = await initializePeerConnection();
 
         const hostId = pageHostId();
+        pageSetProgress('creating the guest answer');
+        phase = "prepareGuestAnswer";
         await prepareGuestAnswer(peerConnection, sessionData, hostId);
 
+        pageSetProgress('wait for all ice candidates');
+        phase = "waitForLocalDescription";
         await waitForLocalDescription(peerConnection, sessionData);
 
         pageSetProgress('connecting...');
 
+        phase = "signalling";
         const guestSignal = await fetch(`${window.location.origin}/api/guest`, {
             method: 'POST',
             body: `{"hostId": "${hostId}", "guestDescription": "${sessionData.localSessionDescription}"}`,
@@ -245,13 +263,15 @@ async function guest() {
 
         const guestSignalJson = await guestSignal.json();
 
+        phase = "waitForIceConnected";
         await waitForIceConnected(peerConnection, sessionData);
         pageSetProgress('connected!');
 
+        phase = "waitForIceDisonnected";
         await waitForIceDisonnected(sessionData);
         pageNotify('disconnected');
     } catch (error) {
-        pageNotify(error);
+        pageNotify(`${phase}: ${error}`);
     }
 
     peerConnection = null;

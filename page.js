@@ -1,6 +1,6 @@
 function pageStartCall() {
     document.getElementById('media').disabled = true;
-    document.getElementById('progress').innerText = 'initializing with stun...';
+    document.getElementById('progress').innerText = 'starting the call';
     document.getElementById('hostId').type = "hidden";
     document.getElementById('hostIdDisplay').innerText = document.getElementById('hostId').value;
     document.getElementById('hostButton').disabled = true;
