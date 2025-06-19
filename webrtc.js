@@ -122,7 +122,7 @@ async function waitForPeer(peerConnection, hostId) {
 }
 
 async function waitForIceConnected(peerConnection) {
-    while (peerConnection.iceConnectionState === '') {
+    while (['new', 'checking', 'disconnected'].indexOf(peerConnection.iceConnectionState) !== -1) {
         await new Promise(resolve => setTimeout(resolve, 50));
     }
 
