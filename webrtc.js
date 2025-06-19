@@ -94,16 +94,7 @@ async function prepareGuestAnswer(peerConnection, sessionData, hostId) {
     peerConnection.setLocalDescription(answerDescription);
 }
 
-async function waitForLocalDescription(peerConnection, sessionData) {
-    peerConnection.oniceconnectionstatechange = (event) => {
-        // this is what makes waitForIceConnected functional
-        //
-        // console.log('ice connection state: ' + event.target.iceConnectionState);
-        if (event.target.iceConnectionState !== 'checking') {
-            sessionData.iceConnectionState = event.target.iceConnectionState;
-        }
-    };
-
+async function waitForLocalDescription(sessionData) {
     while (!sessionData.localSessionDescription) {
         await new Promise(resolve => setTimeout(resolve, 25));
     }
@@ -130,30 +121,23 @@ async function waitForPeer(peerConnection, hostId) {
     }
 }
 
-async function waitForIceConnected(peerConnection, sessionData) {
-    while (sessionData.iceConnectionState === '') {
+async function waitForIceConnected(peerConnection) {
+    while (peerConnection.iceConnectionState === '') {
         await new Promise(resolve => setTimeout(resolve, 50));
     }
 
-    if (sessionData.iceConnectionState !== 'connected') {
-        throw Error(`unexpected iceConnectionState (connected?): ${sessionData.iceConnectionState}`);
+    if (peerConnection.iceConnectionState !== 'connected') {
+        throw Error(`unexpected iceConnectionState (connected?): ${peerConnection.iceConnectionState}`);
     }
-
-    peerConnection.oniceconnectionstatechange = (event) => {
-        // this is what makes waitForIceDisonnected functional
-        //
-        // console.log('ice connection: ', event.target.iceConnectionState);
-        sessionData.iceConnectionState = event.target.iceConnectionState;
-    };
 }
 
-async function waitForIceDisonnected(sessionData) {
-    while (sessionData.iceConnectionState === 'connected') {
+async function waitForIceDisonnected(peerConnection) {
+    while (peerConnection.iceConnectionState === 'connected') {
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    if (sessionData.iceConnectionState !== 'disconnected') {
-        throw Error(`unexpected iceConnectionState (disconnected?): ${sessionData.iceConnectionState}`);
+    if (peerConnection.iceConnectionState !== 'disconnected') {
+        throw Error(`unexpected iceConnectionState (disconnected?): ${peerConnection.iceConnectionState}`);
     }
 }
 
@@ -163,8 +147,7 @@ async function host() {
         pageStartCall();
 
         const sessionData = {
-            localSessionDescription: '',
-            iceConnectionState: ''
+            localSessionDescription: ''
         };
         pageSetProgress('creating the peer connection');
         phase = "initializePeerConnection";
@@ -174,9 +157,9 @@ async function host() {
         phase = "prepareHostOffer";
         await prepareHostOffer(peerConnection, sessionData);
         
-        pageSetProgress('wait for all ice candidates');
+        pageSetProgress('waiting for all ice candidates');
         phase = "waitForLocalDescription";
-        await waitForLocalDescription(peerConnection, sessionData);
+        await waitForLocalDescription(sessionData);
 
         phase = "signalling";
         let hostSignal = await fetch(`${window.location.origin}/api/host?id=${pageHostId()}`, {
@@ -209,11 +192,11 @@ async function host() {
         pageSetProgress('connecting...');
 
         phase = "waitForIceConnected";
-        await waitForIceConnected(peerConnection, sessionData);
+        await waitForIceConnected(peerConnection);
         pageSetProgress('connected!');
 
         phase = "waitForIceDisonnected";
-        await waitForIceDisonnected(sessionData);
+        await waitForIceDisonnected(peerConnection);
         pageNotify('disconnected');
     } catch (error) {
         pageNotify(`${phase}: ${error}`);
@@ -230,8 +213,7 @@ async function guest() {
         pageStartCall();
 
         const sessionData = {
-            localSessionDescription: '',
-            iceConnectionState: ''
+            localSessionDescription: ''
         };
         pageSetProgress('creating the peer connection');
         phase = "initializePeerConnection";
@@ -242,9 +224,9 @@ async function guest() {
         phase = "prepareGuestAnswer";
         await prepareGuestAnswer(peerConnection, sessionData, hostId);
 
-        pageSetProgress('wait for all ice candidates');
+        pageSetProgress('waiting for all ice candidates');
         phase = "waitForLocalDescription";
-        await waitForLocalDescription(peerConnection, sessionData);
+        await waitForLocalDescription(sessionData);
 
         pageSetProgress('connecting...');
 
@@ -264,11 +246,11 @@ async function guest() {
         const guestSignalJson = await guestSignal.json();
 
         phase = "waitForIceConnected";
-        await waitForIceConnected(peerConnection, sessionData);
+        await waitForIceConnected(peerConnection);
         pageSetProgress('connected!');
 
         phase = "waitForIceDisonnected";
-        await waitForIceDisonnected(sessionData);
+        await waitForIceDisonnected(peerConnection);
         pageNotify('disconnected');
     } catch (error) {
         pageNotify(`${phase}: ${error}`);
