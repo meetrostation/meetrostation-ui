@@ -227,8 +227,7 @@ async function host() {
         const localIpAddress = peerConnection.localDescription.sdp.split('\r\n').filter(function(line){return line.indexOf('c=IN IP4 ') === 0;}).map(function(line){return line.substring(9)}).join(',');
         const remoteIpAddress = peerConnection.remoteDescription.sdp.split('\r\n').filter(function(line){return line.indexOf('c=IN IP4 ') === 0;}).map(function(line){return line.substring(9)}).join(',');
 
-        pageSetProgress(`connected!:${localIpAddress}<=>${remoteIpAddress}`);
-        pageSetProgress('connected!');
+        pageSetProgress(`connected:${localIpAddress}<=>${remoteIpAddress}`);
 
         phase = 'waitForIceDisonnected';
         await waitForIceDisonnected(peerConnection, sessionData);
@@ -287,7 +286,7 @@ async function guest() {
         const localIpAddress = peerConnection.localDescription.sdp.split('\r\n').filter(function(line){return line.indexOf('c=IN IP4 ') === 0;}).map(function(line){return line.substring(9)}).join(',');
         const remoteIpAddress = peerConnection.remoteDescription.sdp.split('\r\n').filter(function(line){return line.indexOf('c=IN IP4 ') === 0;}).map(function(line){return line.substring(9)}).join(',');
 
-        pageSetProgress(`connected!:${localIpAddress}<=>${remoteIpAddress}`);
+        pageSetProgress(`connected:${localIpAddress}<=>${remoteIpAddress}`);
 
         phase = 'waitForIceDisonnected';
         await waitForIceDisonnected(peerConnection, sessionData);
