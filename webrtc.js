@@ -148,17 +148,17 @@ async function waitForIceConnected(peerConnection) {
 }
 
 async function waitForIceDisonnected(peerConnection, sessionData) {
-    while (peerConnection.iceConnectionState === 'connected' && sessionData.dataChannel) {
+    while (peerConnection.iceConnectionState === 'connected' && sessionData.dataChannel !== null) {
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        if (sessionData.dataChannel) {
+        if (sessionData.dataChannel !== undefined) {
             const localIpAddress = getIpAddressUtility(peerConnection.localDescription);
 
             sessionData.dataChannel.send(localIpAddress);
         }
     }
 
-    if (peerConnection.iceConnectionState === 'connected' && !sessionData.dataChannel) {
+    if (peerConnection.iceConnectionState === 'connected') {
         throw Error('unexpected dataChannel loss');
     } else if (peerConnection.iceConnectionState !== 'disconnected') {
         throw Error(`unexpected iceConnectionState (disconnected?): ${peerConnection.iceConnectionState}`);
@@ -191,7 +191,7 @@ async function host() {
 
         const sessionData = {
             localSessionDescription: '',
-            dataChannel: null
+            dataChannel: undefined
         };
         pageSetProgress('creating the peer connection');
         phase = 'initializePeerConnection';
@@ -247,6 +247,12 @@ async function host() {
             sessionData.dataChannel.onmessage(message => {
                 console.log(message.data);
             });
+        } else {
+            sessionData.dataChannel.onopen(() => {
+                sessionData.dataChannel.onmessage(message => {
+                    console.log(message.data);
+                });
+            })
         }
 
         phase = 'waitForIceDisonnected';
@@ -268,7 +274,7 @@ async function guest() {
 
         const sessionData = {
             localSessionDescription: '',
-            dataChannel: null
+            dataChannel: undefined
         };
         pageSetProgress('creating the peer connection');
         phase = 'initializePeerConnection';
@@ -312,6 +318,12 @@ async function guest() {
             sessionData.dataChannel.onmessage(message => {
                 console.log(message.data);
             });
+        } else {
+            sessionData.dataChannel.onopen(() => {
+                sessionData.dataChannel.onmessage(message => {
+                    console.log(message.data);
+                });
+            })
         }
 
         phase = 'waitForIceDisonnected';
