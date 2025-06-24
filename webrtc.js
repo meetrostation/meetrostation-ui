@@ -18,6 +18,20 @@ async function initializePeerConnection() {
     return peerConnection;
 }
 
+function prepareDataChannel(peerConnection, sessionData) {
+    const dataChannel = peerConnection.createDataChannel('meetrostation', {
+        ordered: true,
+        negotiated: true,
+        id: 0
+    });
+    dataChannel.onopen = () => {
+        sessionData.dataChannel = dataChannel;
+    };
+    dataChannel.onclose = () => {
+        sessionData.dataChannel = null;
+    };
+}
+
 async function prepareHostOffer(peerConnection, sessionData) {
     peerConnection.onicecandidate = (event) => {
         // this is what makes waitForLocalDescription functional
@@ -44,17 +58,7 @@ async function prepareHostOffer(peerConnection, sessionData) {
         peerConnection.addTransceiver('video', { 'direction': 'recvonly' });
     }
 
-    const dataChannel = peerConnection.createDataChannel('meetrostation', {
-        ordered: true,
-        negotiated: true,
-        id: 0
-    });
-    dataChannel.onopen = () => {
-        sessionData.dataChannel = dataChannel;
-        dataChannel.onmessage = (message) => {
-            sessionData.message = message;
-        }
-    };
+    prepareDataChannel(peerConnection, sessionData);
 
     const offer = await peerConnection.createOffer();
 
@@ -87,18 +91,7 @@ async function prepareGuestAnswer(peerConnection, sessionData, hostId) {
     //     peerConnection.addTransceiver('video', { 'direction': 'recvonly' });
     // }
 
-
-    const dataChannel = peerConnection.createDataChannel('meetrostation', {
-        ordered: true,
-        negotiated: true,
-        id: 0
-    });
-    dataChannel.onopen = () => {
-        sessionData.dataChannel = dataChannel;
-        dataChannel.onmessage = (message) => {
-            sessionData.message = message;
-        }
-    };
+    prepareDataChannel(peerConnection, sessionData);
 
     const hostSignal = await fetch(`${window.location.origin}/api/host?id=${hostId}`, {
         method: 'GET'
@@ -155,19 +148,40 @@ async function waitForIceConnected(peerConnection) {
 }
 
 async function waitForIceDisonnected(peerConnection, sessionData) {
-    while (peerConnection.iceConnectionState === 'connected') {
+    while (peerConnection.iceConnectionState === 'connected' && sessionData.dataChannel) {
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         if (sessionData.dataChannel) {
-            const localIpAddress = peerConnection.localDescription.sdp.split('\r\n').filter(function(line){return line.indexOf('c=IN IP4 ') === 0;}).map(function(line){return line.substring(9)}).join(',');
+            const localIpAddress = getIpAddressUtility(peerConnection.localDescription);
 
             sessionData.dataChannel.send(localIpAddress);
         }
     }
 
-    if (peerConnection.iceConnectionState !== 'disconnected') {
+    if (peerConnection.iceConnectionState === 'connected' && !sessionData.dataChannel) {
+        throw Error('unexpected dataChannel loss');
+    } else if (peerConnection.iceConnectionState !== 'disconnected') {
         throw Error(`unexpected iceConnectionState (disconnected?): ${peerConnection.iceConnectionState}`);
     }
+}
+
+function getIpAddressUtility(description) {
+    return description.sdp.split('\r\n')
+    .filter(
+        function(line){
+            return line.indexOf('c=IN IP4 ') === 0;
+        }
+    )
+    .filter(function(line, index, array) {
+        return array.indexOf(line) === index;
+    })
+    .map(function(line){
+        return line.substring(9);
+    })
+    .filter(function(line) {
+        return line !== '0.0.0.0';
+    })
+    .join(',');
 }
 
 async function host() {
@@ -224,10 +238,16 @@ async function host() {
         phase = 'waitForIceConnected';
         await waitForIceConnected(peerConnection);
 
-        const localIpAddress = peerConnection.localDescription.sdp.split('\r\n').filter(function(line){return line.indexOf('c=IN IP4 ') === 0;}).map(function(line){return line.substring(9)}).join(',');
-        const remoteIpAddress = peerConnection.remoteDescription.sdp.split('\r\n').filter(function(line){return line.indexOf('c=IN IP4 ') === 0;}).map(function(line){return line.substring(9)}).join(',');
+        const localIpAddress = getIpAddressUtility(peerConnection.localDescription);
+        const remoteIpAddress = getIpAddressUtility(peerConnection.remoteDescription);
 
         pageSetProgress(`connected:${localIpAddress}<=>${remoteIpAddress}`);
+
+        if (sessionData.dataChannel) {
+            sessionData.dataChannel.onmessage(message => {
+                console.log(message.data);
+            });
+        }
 
         phase = 'waitForIceDisonnected';
         await waitForIceDisonnected(peerConnection, sessionData);
@@ -283,10 +303,16 @@ async function guest() {
         phase = 'waitForIceConnected';
         await waitForIceConnected(peerConnection);
 
-        const localIpAddress = peerConnection.localDescription.sdp.split('\r\n').filter(function(line){return line.indexOf('c=IN IP4 ') === 0;}).map(function(line){return line.substring(9)}).join(',');
-        const remoteIpAddress = peerConnection.remoteDescription.sdp.split('\r\n').filter(function(line){return line.indexOf('c=IN IP4 ') === 0;}).map(function(line){return line.substring(9)}).join(',');
+        const localIpAddress = getIpAddressUtility(peerConnection.localDescription);
+        const remoteIpAddress = getIpAddressUtility(peerConnection.remoteDescription);
 
         pageSetProgress(`connected:${localIpAddress}<=>${remoteIpAddress}`);
+
+        if (sessionData.dataChannel) {
+            sessionData.dataChannel.onmessage(message => {
+                console.log(message.data);
+            });
+        }
 
         phase = 'waitForIceDisonnected';
         await waitForIceDisonnected(peerConnection, sessionData);
