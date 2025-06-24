@@ -199,6 +199,18 @@ function setUpDataChannelUtility(sessionData) {
                     pageButtonReleased(`${prefix}Button`);
                 }
             }, false);
+            button.addEventListener('touchstart', function (event) {
+                if (sessionData.dataChannel) {
+                    sessionData.dataChannel.send(`${prefix}p`);
+                    pageButtonPressed(`${prefix}Button`);
+                }
+            }, false);
+            button.addEventListener('touchend', function (event) {
+                if (sessionData.dataChannel) {
+                    sessionData.dataChannel.send(`${prefix}r`);
+                    pageButtonReleased(`${prefix}Button`);
+                }
+            }, false);
 
             pageButtonReleased(`${prefix}Button`);
         }
