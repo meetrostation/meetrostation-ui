@@ -111,7 +111,3 @@ function pageButtonReleased(id) {
         button.style.color = 'gray';
     }
 }
-
-for (const prefix of ['lu', 'u', 'ru', 'l', 'z', 'r', 'ld', 'd', 'rd']) {
-    pageButtonReleased(`${prefix}Button`);
-}

@@ -4,6 +4,16 @@
 
 <head>
     <title>PianoUI</title>
+
+    <style>
+        gameButton {
+            color: gray;
+            background-color: gray;
+            font-size: 2em;
+            width: 3em;
+            height: 3em
+        }
+    </style>
 </head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -37,35 +47,35 @@
     <table align="center">
         <tr>
             <td>
-                <button id="luButton" style="font-size: 2em; width: 3em; height: 3em">.</button>
+                <button id="luButton" class="gameButton">.</button>
             </td>
             <td>
-                <button id="uButton" style="font-size: 2em; width: 3em; height: 3em">&uarr;</button>
+                <button id="uButton" class="gameButton">&uarr;</button>
             </td>
             <td>
-                <button id="ruButton" style="font-size: 2em; width: 3em; height: 3em">.</button>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <button id="lButton" style="font-size: 2em; width: 3em; height: 3em">&larr;</button>
-            </td>
-            <td>
-                <button id="zButton" style="font-size: 2em; width: 3em; height: 3em">o</button>
-            </td>
-            <td>
-                <button id="rButton" style="font-size: 2em; width: 3em; height: 3em">&rarr;</button>
+                <button id="ruButton" class="gameButton">.</button>
             </td>
         </tr>
         <tr>
             <td>
-                <button id="ldButton" style="font-size: 2em; width: 3em; height: 3em">.</button>
+                <button id="lButton" class="gameButton">&larr;</button>
             </td>
             <td>
-                <button id="dButton" style="font-size: 2em; width: 3em; height: 3em">&darr;</button>
+                <button id="zButton" class="gameButton">o</button>
             </td>
             <td>
-                <button id="rdButton" style="font-size: 2em; width: 3em; height: 3em">.</button>
+                <button id="rButton" class="gameButton">&rarr;</button>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <button id="ldButton" class="gameButton">.</button>
+            </td>
+            <td>
+                <button id="dButton" class="gameButton">&darr;</button>
+            </td>
+            <td>
+                <button id="rdButton" class="gameButton">.</button>
             </td>
         </tr>
     </table>
