@@ -26,6 +26,9 @@ function prepareDataChannel(peerConnection, sessionData) {
     });
     dataChannel.onopen = () => {
         sessionData.dataChannel = dataChannel;
+        dataChannel.onmessage = (message) => {
+            console.log(message.data);
+        }
     };
     dataChannel.onclose = () => {
         sessionData.dataChannel = null;
@@ -243,18 +246,6 @@ async function host() {
 
         pageSetProgress(`connected:${localIpAddress}<=>${remoteIpAddress}`);
 
-        if (sessionData.dataChannel) {
-            sessionData.dataChannel.onmessage(message => {
-                console.log(message.data);
-            });
-        } else {
-            sessionData.dataChannel.onopen(() => {
-                sessionData.dataChannel.onmessage(message => {
-                    console.log(message.data);
-                });
-            })
-        }
-
         phase = 'waitForIceDisonnected';
         await waitForIceDisonnected(peerConnection, sessionData);
         pageNotify('disconnected');
@@ -313,18 +304,6 @@ async function guest() {
         const remoteIpAddress = getIpAddressUtility(peerConnection.remoteDescription);
 
         pageSetProgress(`connected:${localIpAddress}<=>${remoteIpAddress}`);
-
-        if (sessionData.dataChannel) {
-            sessionData.dataChannel.onmessage(message => {
-                console.log(message.data);
-            });
-        } else {
-            sessionData.dataChannel.onopen(() => {
-                sessionData.dataChannel.onmessage(message => {
-                    console.log(message.data);
-                });
-            })
-        }
 
         phase = 'waitForIceDisonnected';
         await waitForIceDisonnected(peerConnection, sessionData);
