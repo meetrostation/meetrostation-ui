@@ -91,6 +91,7 @@ async function prepareGuestAnswer(peerConnection, sessionData, hostId) {
     const dataChannel = peerConnection.createDataChannel('meetrostation', {
         ordered: true,
         negotiated: true,
+        id: 0
     });
     dataChannel.onopen = () => {
         sessionData.dataChannel = dataChannel;
