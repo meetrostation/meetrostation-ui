@@ -87,3 +87,19 @@ async function pageGetUserMedia() {
 
     return result;
 }
+
+function pageButtonPressed(id) {
+    const button = document.getElementById(id);
+    if (button) {
+        button.style.backgroundColor = 'gray';
+        button.style.color = 'white';
+    }
+}
+
+function pageButtonReleased(id) {
+    const button = document.getElementById(id);
+    if (button) {
+        button.style.backgroundColor = 'blue';
+        button.style.color = 'blue';
+    }
+}
