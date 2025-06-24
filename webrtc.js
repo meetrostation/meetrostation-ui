@@ -47,6 +47,7 @@ async function prepareHostOffer(peerConnection, sessionData) {
     const dataChannel = peerConnection.createDataChannel('meetrostation', {
         ordered: true,
         negotiated: true,
+        id: 0
     });
     dataChannel.onopen = () => {
         sessionData.dataChannel = dataChannel;
