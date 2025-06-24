@@ -185,18 +185,23 @@ function getIpAddressUtility(description) {
 function setUpDataChannelUtility(sessionData) {
     for (const prefix of ['lu', 'u', 'ru', 'l', 'r', 'ld', 'd', 'rd']) {
         const button = document.getElementById(`${prefix}Button`);
-        button.addEventListener('mousedown', function (event) {
-            if (sessionData.dataChannel) {
-                sessionData.dataChannel.send(`${prefix}p`);
-            }
-        }, false);
-        button.addEventListener('mouseup', function (event) {
-            if (sessionData.dataChannel) {
-                sessionData.dataChannel.send(`${prefix}r`);
-            }
-        }, false);
 
-        pageButtonReleased(`${prefix}Button`);
+        if (button) {
+            button.addEventListener('mousedown', function (event) {
+                if (sessionData.dataChannel) {
+                    sessionData.dataChannel.send(`${prefix}p`);
+                    pageButtonPressed(`${prefix}Button`);
+                }
+            }, false);
+            button.addEventListener('mouseup', function (event) {
+                if (sessionData.dataChannel) {
+                    sessionData.dataChannel.send(`${prefix}r`);
+                    pageButtonReleased(`${prefix}Button`);
+                }
+            }, false);
+
+            pageButtonReleased(`${prefix}Button`);
+        }
     }
 }
 

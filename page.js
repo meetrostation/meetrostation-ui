@@ -5,6 +5,10 @@ function pageStartCall() {
     document.getElementById('hostIdDisplay').innerText = document.getElementById('hostId').value;
     document.getElementById('hostButton').disabled = true;
     document.getElementById('guestButton').disabled = true;
+
+    for (const prefix of ['lu', 'u', 'ru', 'l', 'z', 'r', 'ld', 'd', 'rd']) {
+        pageButtonReleased(`${prefix}Button`);
+    }
 }
 
 function pageEndCall() {
@@ -15,6 +19,10 @@ function pageEndCall() {
     document.getElementById('hostIdDisplay').innerText = '';
     document.getElementById('hostButton').disabled = false;
     document.getElementById('guestButton').disabled = false;
+
+    for (const prefix of ['lu', 'u', 'ru', 'l', 'z', 'r', 'ld', 'd', 'rd']) {
+        pageButtonReleased(`${prefix}Button`);
+    }
 }
 
 function pageSetLocalVideoStream(stream) {
@@ -91,7 +99,7 @@ async function pageGetUserMedia() {
 function pageButtonPressed(id) {
     const button = document.getElementById(id);
     if (button) {
-        button.style.backgroundColor = 'gray';
+        button.style.backgroundColor = 'black';
         button.style.color = 'white';
     }
 }
@@ -99,7 +107,7 @@ function pageButtonPressed(id) {
 function pageButtonReleased(id) {
     const button = document.getElementById(id);
     if (button) {
-        button.style.backgroundColor = 'blue';
-        button.style.color = 'blue';
+        button.style.backgroundColor = 'gray';
+        button.style.color = 'gray';
     }
 }
