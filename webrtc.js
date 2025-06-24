@@ -1,12 +1,11 @@
 async function initializePeerConnection() {
     const peerConnection = new RTCPeerConnection({
         iceServers: [{
-            urls: "stun:stun.l.google.com:19302"
+            urls: 'stun:stun.l.google.com:19302'
         }]
     });
     // stun:stun.l.google.com:19302
     // stun:stun.stunprotocol.org
-    // stun:x.matrix.am:3478
 
     // peerConnection.onaddstream = function (event) {
     //     pageSetRemoteVideoStream(event.stream);
@@ -30,13 +29,11 @@ async function prepareHostOffer(peerConnection, sessionData) {
         }
     };
 
-    //
-
-    // // peerConnection.addTransceiver('audio', { 'direction': 'recvonly' });
-    // peerConnection.addTransceiver('video', { 'direction': 'recvonly' });
     const media = await pageGetUserMedia();
     if (media.stream) {
-        media.stream.getTracks().forEach(track => peerConnection.addTrack(track, media.stream));
+        for (const track of media.stream.getTracks()) {
+            peerConnection.addTrack(track, media.stream);
+        }
 
         pageSetLocalVideoStream(media.stream);
     }
@@ -46,6 +43,17 @@ async function prepareHostOffer(peerConnection, sessionData) {
     if (!media.video) {
         peerConnection.addTransceiver('video', { 'direction': 'recvonly' });
     }
+
+    const dataChannel = peerConnection.createDataChannel('meetrostation', {
+        ordered: true,
+        negotiated: true,
+    });
+    dataChannel.onopen = () => {
+        sessionData.dataChannel = dataChannel;
+        dataChannel.onmessage = (message) => {
+            sessionData.message = message;
+        }
+    };
 
     const offer = await peerConnection.createOffer();
 
@@ -63,10 +71,11 @@ async function prepareGuestAnswer(peerConnection, sessionData, hostId) {
         }
     };
 
-    //
     const media = await pageGetUserMedia();
     if (media.stream) {
-        media.stream.getTracks().forEach(track => peerConnection.addTrack(track, media.stream));
+        for (const track of media.stream.getTracks()) {
+            peerConnection.addTrack(track, media.stream);
+        }
 
         pageSetLocalVideoStream(media.stream);
     }
@@ -76,6 +85,18 @@ async function prepareGuestAnswer(peerConnection, sessionData, hostId) {
     // if (!media.video) {
     //     peerConnection.addTransceiver('video', { 'direction': 'recvonly' });
     // }
+
+
+    const dataChannel = peerConnection.createDataChannel('meetrostation', {
+        ordered: true,
+        negotiated: true,
+    });
+    dataChannel.onopen = () => {
+        sessionData.dataChannel = dataChannel;
+        dataChannel.onmessage = (message) => {
+            sessionData.message = message;
+        }
+    };
 
     const hostSignal = await fetch(`${window.location.origin}/api/host?id=${hostId}`, {
         method: 'GET'
@@ -131,9 +152,15 @@ async function waitForIceConnected(peerConnection) {
     }
 }
 
-async function waitForIceDisonnected(peerConnection) {
+async function waitForIceDisonnected(peerConnection, sessionData) {
     while (peerConnection.iceConnectionState === 'connected') {
         await new Promise(resolve => setTimeout(resolve, 1000));
+
+        if (sessionData.dataChannel) {
+            const localIpAddress = peerConnection.localDescription.sdp.split('\r\n').filter(function(line){return line.indexOf('c=IN IP4 ') === 0;}).map(function(line){return line.substring(9)}).join(',');
+
+            sessionData.dataChannel.send(localIpAddress);
+        }
     }
 
     if (peerConnection.iceConnectionState !== 'disconnected') {
@@ -142,26 +169,27 @@ async function waitForIceDisonnected(peerConnection) {
 }
 
 async function host() {
-    let phase = "";
+    let phase = '';
     try {
         pageStartCall();
 
         const sessionData = {
-            localSessionDescription: ''
+            localSessionDescription: '',
+            dataChannel: null
         };
         pageSetProgress('creating the peer connection');
-        phase = "initializePeerConnection";
+        phase = 'initializePeerConnection';
         const peerConnection = await initializePeerConnection();
 
         pageSetProgress('creating the guest answer');
-        phase = "prepareHostOffer";
+        phase = 'prepareHostOffer';
         await prepareHostOffer(peerConnection, sessionData);
         
         pageSetProgress('waiting for all ice candidates');
-        phase = "waitForLocalDescription";
+        phase = 'waitForLocalDescription';
         await waitForLocalDescription(sessionData);
 
-        phase = "signalling";
+        phase = 'signalling';
         let hostSignal = await fetch(`${window.location.origin}/api/host?id=${pageHostId()}`, {
             method: 'GET'
         });
@@ -191,12 +219,17 @@ async function host() {
 
         pageSetProgress('connecting...');
 
-        phase = "waitForIceConnected";
+        phase = 'waitForIceConnected';
         await waitForIceConnected(peerConnection);
+
+        const localIpAddress = peerConnection.localDescription.sdp.split('\r\n').filter(function(line){return line.indexOf('c=IN IP4 ') === 0;}).map(function(line){return line.substring(9)}).join(',');
+        const remoteIpAddress = peerConnection.remoteDescription.sdp.split('\r\n').filter(function(line){return line.indexOf('c=IN IP4 ') === 0;}).map(function(line){return line.substring(9)}).join(',');
+
+        pageSetProgress(`connected!:${localIpAddress}<=>${remoteIpAddress}`);
         pageSetProgress('connected!');
 
-        phase = "waitForIceDisonnected";
-        await waitForIceDisonnected(peerConnection);
+        phase = 'waitForIceDisonnected';
+        await waitForIceDisonnected(peerConnection, sessionData);
         pageNotify('disconnected');
     } catch (error) {
         pageNotify(`${phase}: ${error}`);
@@ -208,29 +241,30 @@ async function host() {
 }
 
 async function guest() {
-    let phase = "";
+    let phase = '';
     try {
         pageStartCall();
 
         const sessionData = {
-            localSessionDescription: ''
+            localSessionDescription: '',
+            dataChannel: null
         };
         pageSetProgress('creating the peer connection');
-        phase = "initializePeerConnection";
+        phase = 'initializePeerConnection';
         const peerConnection = await initializePeerConnection();
 
         const hostId = pageHostId();
         pageSetProgress('creating the guest answer');
-        phase = "prepareGuestAnswer";
+        phase = 'prepareGuestAnswer';
         await prepareGuestAnswer(peerConnection, sessionData, hostId);
 
         pageSetProgress('waiting for all ice candidates');
-        phase = "waitForLocalDescription";
+        phase = 'waitForLocalDescription';
         await waitForLocalDescription(sessionData);
 
         pageSetProgress('connecting...');
 
-        phase = "signalling";
+        phase = 'signalling';
         const guestSignal = await fetch(`${window.location.origin}/api/guest`, {
             method: 'POST',
             body: `{"hostId": "${hostId}", "guestDescription": "${sessionData.localSessionDescription}"}`,
@@ -245,12 +279,16 @@ async function guest() {
 
         const guestSignalJson = await guestSignal.json();
 
-        phase = "waitForIceConnected";
+        phase = 'waitForIceConnected';
         await waitForIceConnected(peerConnection);
-        pageSetProgress('connected!');
 
-        phase = "waitForIceDisonnected";
-        await waitForIceDisonnected(peerConnection);
+        const localIpAddress = peerConnection.localDescription.sdp.split('\r\n').filter(function(line){return line.indexOf('c=IN IP4 ') === 0;}).map(function(line){return line.substring(9)}).join(',');
+        const remoteIpAddress = peerConnection.remoteDescription.sdp.split('\r\n').filter(function(line){return line.indexOf('c=IN IP4 ') === 0;}).map(function(line){return line.substring(9)}).join(',');
+
+        pageSetProgress(`connected!:${localIpAddress}<=>${remoteIpAddress}`);
+
+        phase = 'waitForIceDisonnected';
+        await waitForIceDisonnected(peerConnection, sessionData);
         pageNotify('disconnected');
     } catch (error) {
         pageNotify(`${phase}: ${error}`);
