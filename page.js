@@ -6,9 +6,7 @@ function pageStartCall() {
     document.getElementById('hostButton').disabled = true;
     document.getElementById('guestButton').disabled = true;
 
-    for (const prefix of ['lu', 'u', 'ru', 'l', 'z', 'r', 'ld', 'd', 'rd']) {
-        pageButtonReleased(`${prefix}Button`);
-    }
+    pageResetDataControllers();
 }
 
 function pageEndCall() {
@@ -20,6 +18,10 @@ function pageEndCall() {
     document.getElementById('hostButton').disabled = false;
     document.getElementById('guestButton').disabled = false;
 
+    pageResetDataControllers();
+}
+
+function pageResetDataControllers() {
     for (const prefix of ['lu', 'u', 'ru', 'l', 'z', 'r', 'ld', 'd', 'rd']) {
         pageButtonReleased(`${prefix}Button`);
     }

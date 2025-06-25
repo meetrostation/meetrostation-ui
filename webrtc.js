@@ -152,13 +152,18 @@ async function waitForIceConnected(peerConnection) {
 }
 
 async function waitForIceDisonnected(peerConnection, sessionData) {
-    while (peerConnection.iceConnectionState === 'connected' && sessionData.dataChannel !== null) {
+    let haveDataChannel = !!sessionData.dataChannel;
+
+    while (peerConnection.iceConnectionState === 'connected') {
+        if (haveDataChannel === true && sessionData.dataChannel === null) {
+            pageResetDataControllers();
+        }
+        haveDataChannel = !!sessionData.dataChannel;
+
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    if (peerConnection.iceConnectionState === 'connected') {
-        throw Error('unexpected dataChannel loss');
-    } else if (peerConnection.iceConnectionState !== 'disconnected') {
+    if (peerConnection.iceConnectionState !== 'disconnected') {
         throw Error(`unexpected iceConnectionState (disconnected?): ${peerConnection.iceConnectionState}`);
     }
 }
@@ -183,31 +188,49 @@ function getIpAddressUtility(description) {
 }
 
 function setUpDataChannelUtility(sessionData) {
-    for (const prefix of ['lu', 'u', 'ru', 'l', 'r', 'ld', 'd', 'rd']) {
+    for (const [prefix, actions] of Object.entries(
+        {
+            'lu': ['l', 'u'],
+            'u': ['u'],
+            'ru': ['r', 'u'],
+            'l': ['l'],
+            'r': ['r'],
+            'ld': ['l', 'd'],
+            'd': ['d'],
+            'rd': ['r', 'd']
+        })) {
         const button = document.getElementById(`${prefix}Button`);
 
         if (button) {
             button.addEventListener('mousedown', function (event) {
                 if (sessionData.dataChannel) {
-                    sessionData.dataChannel.send(`${prefix}p`);
+                    for (const action of actions) {
+                        sessionData.dataChannel.send(`${action}p`);
+                    }
                     pageButtonPressed(`${prefix}Button`);
                 }
             }, false);
             button.addEventListener('mouseup', function (event) {
                 if (sessionData.dataChannel) {
-                    sessionData.dataChannel.send(`${prefix}r`);
+                    for (const action of actions) {
+                        sessionData.dataChannel.send(`${action}r`);
+                    }
                     pageButtonReleased(`${prefix}Button`);
                 }
             }, false);
             button.addEventListener('touchstart', function (event) {
                 if (sessionData.dataChannel) {
-                    sessionData.dataChannel.send(`${prefix}p`);
+                    for (const action of actions) {
+                        sessionData.dataChannel.send(`${action}p`);
+                    }
                     pageButtonPressed(`${prefix}Button`);
                 }
             }, false);
             button.addEventListener('touchend', function (event) {
                 if (sessionData.dataChannel) {
-                    sessionData.dataChannel.send(`${prefix}r`);
+                    for (const action of actions) {
+                        sessionData.dataChannel.send(`${action}r`);
+                    }
                     pageButtonReleased(`${prefix}Button`);
                 }
             }, false);
